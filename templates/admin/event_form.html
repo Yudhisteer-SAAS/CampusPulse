@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Event{% endblock %}
+{% block content %}
+  <section class="auth-layout reveal">
+    <div class="auth-panel panel wide-panel">
+      <p class="eyebrow">Event management</p>
+      <h1>{{ action }} event</h1>
+      <form method="POST" action="{% if action == 'Edit' %}{{ url_for('admin.edit_event', event_id=event.id) }}{% else %}{{ url_for('admin.create_event') }}{% endif %}">
+        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}" />
+
+        <div class="field-group">
+          <label for="title">Event title</label>
+          <input id="title" name="title" type="text" value="{{ event.title if event else '' }}" placeholder="Campus Innovation Expo" required />
+        </div>
+
+        <div class="field-group">
+          <label for="description">Description</label>
+          <textarea id="description" name="description" rows="5" placeholder="Add the event details students should know before registering." required>{{ event.description if event else '' }}</textarea>
+        </div>
+
+        <div class="two-column-fields">
+          <div class="field-group">
+            <label for="category">Category</label>
+            <select id="category" name="category" required>
+              <option value="">Select category</option>
+              {% for choice in ['Technical', 'Cultural', 'Sports', 'Workshop', 'Seminar', 'Other'] %}
+                <option value="{{ choice }}" {% if event and event.category == choice %}selected{% endif %}>{{ choice }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="seat_limit">Seat capacity</label>
+            <input id="seat_limit" name="seat_limit" type="number" min="1" value="{{ event.seat_limit if event else 50 }}" required />
+          </div>
+        </div>
+
+        <div class="two-column-fields">
+          <div class="field-group">
+            <label for="date">Event date</label>
+            <input id="date" name="date" type="date" value="{{ event.date if event else '' }}" required />
+          </div>
+          <div class="field-group">
+            <label for="time">Event time</label>
+            <input id="time" name="time" type="time" value="{{ event.time if event else '09:00' }}" required />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="venue">Venue</label>
+          <input id="venue" name="venue" type="text" value="{{ event.venue if event else '' }}" placeholder="Main auditorium" required />
+        </div>
+
+        <button class="button full-width" type="submit">{{ action }} event</button>
+      </form>
+    </div>
+  </section>
+{% endblock %}

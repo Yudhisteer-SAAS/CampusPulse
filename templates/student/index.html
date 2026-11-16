@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}CampusPulse | Campus events{% endblock %}
+{% block content %}
+  <section class="hero reveal">
+    <div class="hero-content">
+      <p class="eyebrow">Campus culture in motion</p>
+      <h1>Discover events that shape your semester.</h1>
+      <p class="hero-text">From innovation showcases to cultural nights and networking sessions, CampusPulse keeps the campus connected and informed.</p>
+      <div class="action-row">
+        <a class="button" href="{{ url_for('auth.signup') }}">Join campus life</a>
+        <a class="button button-outline" href="{{ url_for('student.events') }}">Explore events</a>
+      </div>
+    </div>
+    <div class="hero-visual panel">
+      <div class="hero-card card-top-left">
+        <span>Featured</span>
+        <strong>Innovation Expo</strong>
+      </div>
+      <div class="hero-card card-bottom-right">
+        <span>Next up</span>
+        <strong>Community music night</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="category-strip reveal">
+    {% for category in categories %}
+      <a href="{{ url_for('student.events', category=category) }}" class="chip">{{ category }}</a>
+    {% endfor %}
+  </section>
+
+  <section class="section reveal">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">What’s trending</p>
+        <h2>Featured events</h2>
+      </div>
+      <a href="{{ url_for('student.events') }}" class="text-link">Browse all</a>
+    </div>
+    <div class="card-grid">
+      {% for event in featured %}
+        <article class="event-card reveal">
+          <div class="event-card-head">
+            <span class="tag">{{ event.category }}</span>
+            <span class="seat-pill">{{ event.available_seats }} seats left</span>
+          </div>
+          <h3>{{ event.title }}</h3>
+          <p>{{ event.description[:120] }}{% if event.description|length > 120 %}...{% endif %}</p>
+          <div class="meta-row">
+            <span>{{ event.date }}</span>
+            <span>{{ event.time }}</span>
+          </div>
+          <div class="card-footer">
+            <span>{{ event.venue }}</span>
+            <a href="{{ url_for('student.event_detail', event_id=event.id) }}">View details</a>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="section reveal">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">Fresh on campus</p>
+        <h2>Upcoming events</h2>
+      </div>
+    </div>
+    {% if events %}
+      <div class="list-stack">
+        {% for event in events %}
+          <article class="list-card reveal">
+            <div>
+              <p class="eyebrow">{{ event.category }}</p>
+              <h3>{{ event.title }}</h3>
+            </div>
+            <div class="list-meta">
+              <span>{{ event.date }}</span>
+              <span>{{ event.time }}</span>
+              <span>{{ event.venue }}</span>
+            </div>
+            <a class="button button-outline" href="{{ url_for('student.event_detail', event_id=event.id) }}">See details</a>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state panel">
+        <h3>No upcoming events yet.</h3>
+        <p>Check back soon for the next student event.</p>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

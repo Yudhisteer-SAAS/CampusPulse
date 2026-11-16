@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Something went wrong{% endblock %}
+{% block content %}
+  <section class="empty-state panel reveal">
+    <p class="eyebrow">500</p>
+    <h1>Something went wrong</h1>
+    <p>The server encountered an unexpected issue while handling your request.</p>
+    <div class="action-row">
+      <a class="button" href="{{ url_for('student.home') }}">Try again</a>
+    </div>
+  </section>
+{% endblock %}

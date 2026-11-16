@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Feedback for {{ event.title }}{% endblock %}
+{% block content %}
+  <section class="auth-layout reveal">
+    <div class="auth-panel panel wide-panel">
+      <p class="eyebrow">Event feedback</p>
+      <h1>{{ event.title }}</h1>
+      <p class="small-copy">Help improve future event experiences by sharing your honest feedback.</p>
+
+      <form method="POST" action="{{ url_for('student.feedback', event_id=event.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}" />
+
+        <div class="field-group">
+          <label>Rating</label>
+          <div class="star-rating" aria-label="Rating">
+            <input type="radio" name="rating" id="star5" value="5" required />
+            <label for="star5">★</label>
+            <input type="radio" name="rating" id="star4" value="4" />
+            <label for="star4">★</label>
+            <input type="radio" name="rating" id="star3" value="3" />
+            <label for="star3">★</label>
+            <input type="radio" name="rating" id="star2" value="2" />
+            <label for="star2">★</label>
+            <input type="radio" name="rating" id="star1" value="1" />
+            <label for="star1">★</label>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="comment">Comment</label>
+          <textarea id="comment" name="comment" rows="6" placeholder="Share your thoughts about the event, experience, and overall quality." required></textarea>
+        </div>
+
+        <button class="button full-width" type="submit">Submit feedback</button>
+      </form>
+    </div>
+  </section>
+{% endblock %}

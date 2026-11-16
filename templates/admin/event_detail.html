@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block title %}{{ event.title }} Management{% endblock %}
+{% block content %}
+  <section class="page-header reveal">
+    <div>
+      <p class="eyebrow">Event overview</p>
+      <h1>{{ event.title }}</h1>
+    </div>
+    <div class="action-row">
+      <a class="button button-outline" href="{{ url_for('admin.edit_event', event_id=event.id) }}">Edit</a>
+      <form method="POST" action="{{ url_for('admin.delete_event', event_id=event.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}" />
+        <button class="button button-outline danger" type="submit">Delete</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="detail-layout reveal">
+    <div class="panel detail-panel">
+      <p class="event-description">{{ event.description }}</p>
+      <div class="stats-grid detail-stats">
+        <div class="stat-card subtle"><span>Category</span><strong>{{ event.category }}</strong></div>
+        <div class="stat-card subtle"><span>Date</span><strong>{{ event.date }}</strong></div>
+        <div class="stat-card subtle"><span>Time</span><strong>{{ event.time }}</strong></div>
+        <div class="stat-card subtle"><span>Venue</span><strong>{{ event.venue }}</strong></div>
+        <div class="stat-card subtle"><span>Capacity</span><strong>{{ event.seat_limit }}</strong></div>
+      </div>
+    </div>
+
+    <aside class="panel side-panel">
+      <h3>Event metrics</h3>
+      <div class="status-box">
+        <span>Available seats</span>
+        <strong>{{ event.seat_limit - (registered_students|length) }}</strong>
+      </div>
+      <div class="status-box">
+        <span>Waitlist size</span>
+        <strong>{{ waitlist|length }}</strong>
+      </div>
+      <div class="status-box">
+        <span>Average rating</span>
+        <strong>{{ feedback_summary.average_rating }}</strong>
+      </div>
+    </aside>
+  </section>
+
+  <section class="two-column-grid reveal">
+    <div class="panel">
+      <div class="section-header compact">
+        <div>
+          <p class="eyebrow">Confirmed attendees</p>
+          <h2>Registered students</h2>
+        </div>
+      </div>
+      {% if registered_students %}
+        <div class="mini-list">
+          {% for student in registered_students %}
+            <div class="mini-item">
+              <div>
+                <strong>{{ student.name }}</strong>
+                <span>{{ student.email }}</span>
+              </div>
+              <span>{{ student.registered_at }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="empty-text">No students have registered yet.</p>
+      {% endif %}
+    </div>
+
+    <div class="panel">
+      <div class="section-header compact">
+        <div>
+          <p class="eyebrow">Waitlist</p>
+          <h2>Queue order</h2>
+        </div>
+      </div>
+      {% if waitlist %}
+        <div class="mini-list">
+          {% for entry in waitlist %}
+            <div class="mini-item">
+              <div>
+                <strong>{{ entry.name }}</strong>
+                <span>{{ entry.email }}</span>
+              </div>
+              <span>#{{ loop.index }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="empty-text">No waitlist entries at the moment.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="section reveal">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">Feedback</p>
+        <h2>Student reviews</h2>
+      </div>
+    </div>
+    {% if feedback_summary.feedback %}
+      <div class="list-stack">
+        {% for item in feedback_summary.feedback %}
+          <article class="list-card review-card">
+            <div>
+              <p class="eyebrow">{{ item.name }}</p>
+              <h3>{{ item.rating }} / 5</h3>
+            </div>
+            <p>{{ item.comment }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state panel">
+        <h3>No feedback submitted yet.</h3>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

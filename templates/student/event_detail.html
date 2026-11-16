@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}{{ event.title }}{% endblock %}
+{% block content %}
+  <section class="page-header reveal">
+    <div>
+      <p class="eyebrow">{{ event.category }}</p>
+      <h1>{{ event.title }}</h1>
+    </div>
+    {% if event.date < today %}
+      <span class="badge badge-muted">Past event</span>
+    {% else %}
+      <span class="badge badge-success">Upcoming</span>
+    {% endif %}
+  </section>
+
+  <section class="detail-layout reveal">
+    <div class="panel detail-panel">
+      <p class="event-description">{{ event.description }}</p>
+
+      <div class="stats-grid detail-stats">
+        <div class="stat-card subtle">
+          <span>Date</span>
+          <strong>{{ event.date }}</strong>
+        </div>
+        <div class="stat-card subtle">
+          <span>Time</span>
+          <strong>{{ event.time }}</strong>
+        </div>
+        <div class="stat-card subtle">
+          <span>Venue</span>
+          <strong>{{ event.venue }}</strong>
+        </div>
+        <div class="stat-card subtle">
+          <span>Capacity</span>
+          <strong>{{ event.seat_limit }}</strong>
+        </div>
+      </div>
+
+      {% if feedback_summary.total_count %}
+        <div class="feedback-summary">
+          <h3>Feedback</h3>
+          <p><strong>{{ feedback_summary.average_rating }}</strong> average rating from {{ feedback_summary.total_count }} review(s).</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <aside class="panel side-panel">
+      <h3>Registration status</h3>
+      {% if current_user and current_user.role == 'student' %}
+        {% if registration %}
+          <p class="status-label confirmed">Confirmed registration</p>
+          <div class="status-box">
+            <span>Seat status</span>
+            <strong>{{ summary.available_seats }} seats available</strong>
+          </div>
+          <form method="POST" action="{{ url_for('student.cancel_event', event_id=event.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}" />
+            <button class="button button-outline danger" type="submit">Cancel registration</button>
+          </form>
+          {% if event.date < today %}
+            <a class="button button-outline" href="{{ url_for('student.feedback', event_id=event.id) }}">Leave feedback</a>
+          {% endif %}
+        {% elif waitlist_entry %}
+          <p class="status-label waitlisted">You are on the waitlist</p>
+          <div class="status-box">
+            <span>Your position</span>
+            <strong>#{{ waitlist_position }}</strong>
+          </div>
+          <form method="POST" action="{{ url_for('student.cancel_event', event_id=event.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}" />
+            <button class="button button-outline danger" type="submit">Leave waitlist</button>
+          </form>
+        {% else %}
+          {% if event.date >= today %}
+            <div class="status-box">
+              <span>Available seats</span>
+              <strong>{{ summary.available_seats }}</strong>
+            </div>
+            <form method="POST" action="{{ url_for('student.register_event', event_id=event.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}" />
+              <button class="button" type="submit">{% if summary.available_seats > 0 %}Register now{% else %}Join waitlist{% endif %}</button>
+            </form>
+          {% else %}
+            <p class="muted">Registration closed for this past event.</p>
+          {% endif %}
+        {% endif %}
+      {% else %}
+        <p>Please log in to register or join the waitlist.</p>
+        <a class="button" href="{{ url_for('auth.login') }}">Login</a>
+      {% endif %}
+    </aside>
+  </section>
+{% endblock %}

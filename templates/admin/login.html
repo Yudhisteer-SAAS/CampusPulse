@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Admin Login{% endblock %}
+{% block content %}
+  <section class="auth-layout reveal">
+    <div class="auth-panel panel">
+      <p class="eyebrow">Administrative access</p>
+      <h1>Admin login</h1>
+      <form method="POST" action="{{ url_for('admin.admin_login') }}">
+        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}" />
+        <div class="field-group">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" placeholder="admin@campuspulse.edu" required />
+        </div>
+        <div class="field-group">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" placeholder="Secure admin password" required />
+        </div>
+        <button class="button full-width" type="submit">Access dashboard</button>
+      </form>
+    </div>
+  </section>
+{% endblock %}

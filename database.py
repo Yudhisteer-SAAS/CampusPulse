@@ -1,0 +1,266 @@
+import sqlite3
+from datetime import date, timedelta
+from pathlib import Path
+
+from werkzeug.security import generate_password_hash
+
+from config import DATABASE_PATH
+
+
+def get_db_connection():
+    DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(DATABASE_PATH)
+    connection.row_factory = sqlite3.Row
+    connection.execute('PRAGMA foreign_keys = ON')
+    return connection
+
+
+def init_db():
+    with get_db_connection() as connection:
+        connection.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL CHECK(role IN ('student', 'admin')),
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            '''
+        )
+
+        connection.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                category TEXT NOT NULL,
+                date TEXT NOT NULL,
+                time TEXT NOT NULL,
+                venue TEXT NOT NULL,
+                seat_limit INTEGER NOT NULL CHECK(seat_limit > 0),
+                created_by INTEGER NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(created_by) REFERENCES users(id)
+            )
+            '''
+        )
+
+        connection.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS registrations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                event_id INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'confirmed' CHECK(status IN ('confirmed')),
+                registered_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, event_id),
+                FOREIGN KEY(user_id) REFERENCES users(id),
+                FOREIGN KEY(event_id) REFERENCES events(id)
+            )
+            '''
+        )
+
+        connection.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS waitlist (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                event_id INTEGER NOT NULL,
+                joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                status TEXT NOT NULL DEFAULT 'waiting' CHECK(status IN ('waiting')),
+                UNIQUE(user_id, event_id),
+                FOREIGN KEY(user_id) REFERENCES users(id),
+                FOREIGN KEY(event_id) REFERENCES events(id)
+            )
+            '''
+        )
+
+        connection.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS feedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                event_id INTEGER NOT NULL,
+                rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+                comment TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, event_id),
+                FOREIGN KEY(user_id) REFERENCES users(id),
+                FOREIGN KEY(event_id) REFERENCES events(id)
+            )
+            '''
+        )
+
+
+def _seed_events(connection):
+    today = date.today()
+    events = [
+        {
+            'title': 'Campus Innovation Expo',
+            'description': 'A showcase of student-built prototypes, hackathon winners, and entrepreneurial startups from across the campus.',
+            'category': 'Technical',
+            'date': (today + timedelta(days=4)).isoformat(),
+            'time': '10:00',
+            'venue': 'Innovation Hall',
+            'seat_limit': 80,
+            'created_by': 1,
+        },
+        {
+            'title': 'Cultural Night 2026',
+            'description': 'An evening of music, dance, and poetry that celebrates the creativity of the student community.',
+            'category': 'Cultural',
+            'date': (today + timedelta(days=9)).isoformat(),
+            'time': '18:30',
+            'venue': 'Auditorium A',
+            'seat_limit': 120,
+            'created_by': 1,
+        },
+        {
+            'title': 'Intercollege Football League',
+            'description': 'A competitive football event with live commentary, team spirit, and community cheering.',
+            'category': 'Sports',
+            'date': (today + timedelta(days=12)).isoformat(),
+            'time': '16:00',
+            'venue': 'Main Sports Field',
+            'seat_limit': 60,
+            'created_by': 1,
+        },
+        {
+            'title': 'AI for Everyday Problems',
+            'description': 'A practical workshop exploring how machine learning can enhance education, healthcare, and community planning.',
+            'category': 'Workshop',
+            'date': (today + timedelta(days=15)).isoformat(),
+            'time': '11:00',
+            'venue': 'Smart Labs Studio',
+            'seat_limit': 40,
+            'created_by': 1,
+        },
+        {
+            'title': 'Startup Storytelling Seminar',
+            'description': 'Hear from founders, investors, and mentors about how student ideas can become real ventures.',
+            'category': 'Seminar',
+            'date': (today + timedelta(days=22)).isoformat(),
+            'time': '14:00',
+            'venue': 'Executive Hall',
+            'seat_limit': 70,
+            'created_by': 1,
+        },
+        {
+            'title': 'Design Sprint Challenge',
+            'description': 'A rapid innovation challenge focused on prototyping and human-centered design thinking.',
+            'category': 'Technical',
+            'date': (today + timedelta(days=28)).isoformat(),
+            'time': '09:30',
+            'venue': 'Maker Studio',
+            'seat_limit': 55,
+            'created_by': 1,
+        },
+        {
+            'title': 'Campus Wellness Week Kickoff',
+            'description': 'A community event featuring wellness talks, mindfulness workshops, and mental health resources.',
+            'category': 'Other',
+            'date': (today - timedelta(days=10)).isoformat(),
+            'time': '13:00',
+            'venue': 'Student Center',
+            'seat_limit': 90,
+            'created_by': 1,
+        },
+        {
+            'title': 'Tech & Talent Meetup',
+            'description': 'A networking session for students and recruiters, including a short panel and informal career conversations.',
+            'category': 'Seminar',
+            'date': (today + timedelta(days=3)).isoformat(),
+            'time': '17:00',
+            'venue': 'Conference Center',
+            'seat_limit': 2,
+            'created_by': 1,
+        },
+    ]
+
+    inserted_event_ids = {}
+    for event in events:
+        cursor = connection.execute(
+            '''
+            INSERT INTO events (title, description, category, date, time, venue, seat_limit, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''',
+            (
+                event['title'],
+                event['description'],
+                event['category'],
+                event['date'],
+                event['time'],
+                event['venue'],
+                event['seat_limit'],
+                event['created_by'],
+            ),
+        )
+        inserted_event_ids[event['title']] = cursor.lastrowid
+
+    return inserted_event_ids
+
+
+def seed_database():
+    with get_db_connection() as connection:
+        if connection.execute('SELECT 1 FROM users LIMIT 1').fetchone():
+            return
+
+        admin_password = generate_password_hash('Admin@123')
+        student_password = generate_password_hash('Student@123')
+
+        user_rows = [
+            (1, 'Admin User', 'admin@campuspulse.edu', admin_password, 'admin'),
+            (2, 'Maya Chen', 'maya@campuspulse.edu', student_password, 'student'),
+            (3, 'Daniel Torres', 'daniel@campuspulse.edu', student_password, 'student'),
+            (4, 'Priya Nair', 'priya@campuspulse.edu', student_password, 'student'),
+            (5, 'Leo Carter', 'leo@campuspulse.edu', student_password, 'student'),
+            (6, 'Aisha Rahman', 'aisha@campuspulse.edu', student_password, 'student'),
+        ]
+        connection.executemany(
+            'INSERT INTO users (id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)',
+            user_rows,
+        )
+
+        event_ids = _seed_events(connection)
+
+        registrations = [
+            (2, event_ids['Campus Innovation Expo'], 'confirmed', '2026-11-15 09:00:00'),
+            (3, event_ids['Campus Innovation Expo'], 'confirmed', '2026-11-15 09:14:00'),
+            (4, event_ids['Cultural Night 2026'], 'confirmed', '2026-11-15 10:00:00'),
+            (5, event_ids['AI for Everyday Problems'], 'confirmed', '2026-11-15 11:30:00'),
+            (6, event_ids['Campus Wellness Week Kickoff'], 'confirmed', '2026-11-15 12:30:00'),
+            (2, event_ids['Tech & Talent Meetup'], 'confirmed', '2026-11-15 14:00:00'),
+            (3, event_ids['Tech & Talent Meetup'], 'confirmed', '2026-11-15 14:20:00'),
+        ]
+        connection.executemany(
+            'INSERT INTO registrations (user_id, event_id, status, registered_at) VALUES (?, ?, ?, ?)',
+            registrations,
+        )
+
+        waitlist_entries = [
+            (4, event_ids['Tech & Talent Meetup'], '2026-11-15 15:00:00', 'waiting'),
+            (5, event_ids['Tech & Talent Meetup'], '2026-11-15 15:40:00', 'waiting'),
+        ]
+        connection.executemany(
+            'INSERT INTO waitlist (user_id, event_id, joined_at, status) VALUES (?, ?, ?, ?)',
+            waitlist_entries,
+        )
+
+        feedback_rows = [
+            (2, event_ids['Campus Wellness Week Kickoff'], 5, 'Very insightful and well organized. The wellness resources were especially useful.', '2026-11-15 18:00:00'),
+            (3, event_ids['Campus Wellness Week Kickoff'], 4, 'The sessions were helpful and the pacing was good.', '2026-11-15 18:45:00'),
+            (4, event_ids['Campus Wellness Week Kickoff'], 5, 'Excellent event with a friendly atmosphere and strong speakers.', '2026-11-15 19:15:00'),
+        ]
+        connection.executemany(
+            'INSERT INTO feedback (user_id, event_id, rating, comment, created_at) VALUES (?, ?, ?, ?, ?)',
+            feedback_rows,
+        )
+
+
+if __name__ == '__main__':
+    init_db()
+    seed_database()
+    print(f'Initialized CampusPulse database at {DATABASE_PATH}')

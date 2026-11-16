@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}CampusPulse Events{% endblock %}
+{% block content %}
+  <section class="page-header reveal">
+    <div>
+      <p class="eyebrow">Discover</p>
+      <h1>Event catalog</h1>
+    </div>
+  </section>
+
+  <section class="filter-bar panel reveal">
+    <div class="category-filters">
+      <a href="{{ url_for('student.events', category='all') }}" class="chip {% if selected_category == 'all' %}chip-active{% endif %}">All</a>
+      {% for category in categories %}
+        <a href="{{ url_for('student.events', category=category) }}" class="chip {% if selected_category == category %}chip-active{% endif %}">{{ category }}</a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="section reveal">
+    {% if events %}
+      <div class="card-grid">
+        {% for event in events %}
+          <article class="event-card reveal">
+            <div class="event-card-head">
+              <span class="tag">{{ event.category }}</span>
+              <span class="seat-pill">{{ event.available_seats }} seats</span>
+            </div>
+            <h3>{{ event.title }}</h3>
+            <p>{{ event.description[:120] }}{% if event.description|length > 120 %}...{% endif %}</p>
+            <div class="meta-row">
+              <span>{{ event.date }}</span>
+              <span>{{ event.time }}</span>
+            </div>
+            <div class="card-footer">
+              <span>{{ event.venue }}</span>
+              <a href="{{ url_for('student.event_detail', event_id=event.id) }}">View event</a>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state panel">
+        <h3>No events match this category.</h3>
+        <p>Try another category or check back later for new campus events.</p>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Access denied{% endblock %}
+{% block content %}
+  <section class="empty-state panel reveal">
+    <p class="eyebrow">403</p>
+    <h1>Access denied</h1>
+    <p>You do not have permission to access this area. Please sign in with the correct account.</p>
+    <div class="action-row">
+      <a class="button" href="{{ url_for('student.home') }}">Back home</a>
+    </div>
+  </section>
+{% endblock %}

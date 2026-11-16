@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+  <section class="page-header reveal">
+    <div>
+      <p class="eyebrow">CampusPulse admin</p>
+      <h1>Administration dashboard</h1>
+    </div>
+    <a class="button" href="{{ url_for('admin.create_event') }}">Create event</a>
+  </section>
+
+  <section class="stats-grid reveal">
+    <div class="stat-card panel">
+      <span>Total events</span>
+      <strong>{{ stats.total_events }}</strong>
+    </div>
+    <div class="stat-card panel">
+      <span>Registrations</span>
+      <strong>{{ stats.student_registrations }}</strong>
+    </div>
+    <div class="stat-card panel">
+      <span>Waitlist</span>
+      <strong>{{ stats.waitlist }}</strong>
+    </div>
+  </section>
+
+  <section class="section reveal">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">Overview</p>
+        <h2>All campus events</h2>
+      </div>
+    </div>
+
+    {% if events %}
+      <div class="list-stack">
+        {% for event in events %}
+          <article class="list-card admin-list reveal">
+            <div>
+              <p class="eyebrow">{{ event.category }}</p>
+              <h3>{{ event.title }}</h3>
+            </div>
+            <div class="list-meta">
+              <span>{{ event.date }}</span>
+              <span>{{ event.time }}</span>
+              <span>{{ event.venue }}</span>
+            </div>
+            <div class="list-meta subtle-metrics">
+              <span>{{ event.registered_count or 0 }} registered</span>
+              <span>{{ event.waitlist_count or 0 }} waitlisted</span>
+              <span>{{ event.seat_limit }} capacity</span>
+            </div>
+            <div class="action-row">
+              <a class="button button-outline" href="{{ url_for('admin.event_detail', event_id=event.id) }}">Manage</a>
+              <a class="button button-outline" href="{{ url_for('admin.edit_event', event_id=event.id) }}">Edit</a>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state panel">
+        <h3>No events have been created yet.</h3>
+        <p>Use the button above to create the first event for campus.</p>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

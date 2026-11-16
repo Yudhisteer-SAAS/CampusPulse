@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}CampusPulse Dashboard{% endblock %}
+{% block content %}
+  <section class="page-header reveal">
+    <div>
+      <p class="eyebrow">Your hub</p>
+      <h1>Welcome back, {{ user.name }}.</h1>
+    </div>
+    <a class="button" href="{{ url_for('student.events') }}">Browse events</a>
+  </section>
+
+  <section class="stats-grid reveal">
+    <div class="stat-card panel">
+      <span>Upcoming events</span>
+      <strong>{{ upcoming|length }}</strong>
+    </div>
+    <div class="stat-card panel">
+      <span>Confirmed</span>
+      <strong>{{ registrations|length }}</strong>
+    </div>
+    <div class="stat-card panel">
+      <span>Waitlisted</span>
+      <strong>{{ waitlisted|length }}</strong>
+    </div>
+  </section>
+
+  <section class="two-column-grid reveal">
+    <div class="panel">
+      <div class="section-header compact">
+        <div>
+          <p class="eyebrow">Your schedule</p>
+          <h2>Recent activity</h2>
+        </div>
+      </div>
+      {% if registrations or waitlisted %}
+        <div class="mini-list">
+          {% for item in registrations %}
+            <div class="mini-item">
+              <div>
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.date }} • {{ item.venue }}</span>
+              </div>
+              <span class="status confirmed">Confirmed</span>
+            </div>
+          {% endfor %}
+          {% for item in waitlisted %}
+            <div class="mini-item">
+              <div>
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.date }} • {{ item.venue }}</span>
+              </div>
+              <span class="status waitlisted">Waitlisted</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state small">
+          <p>You have not registered for any events yet.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="panel">
+      <div class="section-header compact">
+        <div>
+          <p class="eyebrow">Browse</p>
+          <h2>Popular categories</h2>
+        </div>
+      </div>
+      <div class="tag-cloud">
+        {% for category in categories %}
+          <a href="{{ url_for('student.events', category=category) }}" class="chip">{{ category }}</a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="section reveal">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">Upcoming</p>
+        <h2>Recommended for you</h2>
+      </div>
+      <a href="{{ url_for('student.events') }}" class="text-link">See all</a>
+    </div>
+    <div class="card-grid">
+      {% for event in upcoming %}
+        <article class="event-card reveal">
+          <div class="event-card-head">
+            <span class="tag">{{ event.category }}</span>
+            <span class="seat-pill">{{ event.available_seats }} seats</span>
+          </div>
+          <h3>{{ event.title }}</h3>
+          <p>{{ event.description[:95] }}{% if event.description|length > 95 %}...{% endif %}</p>
+          <div class="meta-row">
+            <span>{{ event.date }}</span>
+            <span>{{ event.time }}</span>
+          </div>
+          <div class="card-footer">
+            <span>{{ event.venue }}</span>
+            <a href="{{ url_for('student.event_detail', event_id=event.id) }}">Open</a>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}
