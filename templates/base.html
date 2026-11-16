@@ -16,25 +16,33 @@
         </a>
       </div>
 
-      <nav class="main-nav" aria-label="Main navigation">
-        {% if current_user %}
-          {% if current_user.role == 'student' %}
-            <a href="{{ url_for('student.home') }}">Home</a>
-            <a href="{{ url_for('student.dashboard') }}">Dashboard</a>
-            <a href="{{ url_for('student.events') }}">Events</a>
-            <a href="{{ url_for('student.my_registrations') }}">My Registrations</a>
+      <div class="nav-shell">
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="main-nav-menu" aria-label="Toggle navigation">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <nav id="main-nav-menu" class="main-nav" aria-label="Main navigation">
+          {% if current_user %}
+            {% if current_user.role == 'student' %}
+              <a href="{{ url_for('student.home') }}">Home</a>
+              <a href="{{ url_for('student.dashboard') }}">Dashboard</a>
+              <a href="{{ url_for('student.events') }}">Events</a>
+              <a href="{{ url_for('student.my_registrations') }}">My Registrations</a>
+            {% else %}
+              <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+              <a href="{{ url_for('admin.create_event') }}">Create Event</a>
+            {% endif %}
+            <a class="button button-outline" href="{{ url_for('auth.logout') }}">Logout</a>
           {% else %}
-            <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
-            <a href="{{ url_for('admin.create_event') }}">Create Event</a>
+            <a href="{{ url_for('student.home') }}">Home</a>
+            <a href="{{ url_for('student.events') }}">Events</a>
+            <a class="button button-outline" href="{{ url_for('auth.login') }}">Login</a>
+            <a class="button" href="{{ url_for('auth.signup') }}">Sign Up</a>
           {% endif %}
-          <a class="button button-outline" href="{{ url_for('auth.logout') }}">Logout</a>
-        {% else %}
-          <a href="{{ url_for('student.home') }}">Home</a>
-          <a href="{{ url_for('student.events') }}">Events</a>
-          <a class="button button-outline" href="{{ url_for('auth.login') }}">Login</a>
-          <a class="button" href="{{ url_for('auth.signup') }}">Sign Up</a>
-        {% endif %}
-      </nav>
+        </nav>
+      </div>
     </header>
 
     <main class="page-shell">

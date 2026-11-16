@@ -1,4 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const navToggle = document.querySelector('.nav-toggle');
+  const navMenu = document.querySelector('.main-nav');
+
+  if (navToggle && navMenu) {
+    navToggle.addEventListener('click', () => {
+      const isOpen = navMenu.classList.toggle('is-open');
+      navToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    navMenu.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 760) {
+          navMenu.classList.remove('is-open');
+          navToggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+    });
+  }
+
   const reveals = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window) {
     const observer = new IntersectionObserver((entries) => {
