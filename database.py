@@ -105,7 +105,7 @@ def _seed_events(connection):
             'date': (today + timedelta(days=4)).isoformat(),
             'time': '10:00',
             'venue': 'Innovation Hall',
-            'seat_limit': 80,
+            'seat_limit': 2,
             'created_by': 1,
         },
         {
@@ -115,7 +115,7 @@ def _seed_events(connection):
             'date': (today + timedelta(days=9)).isoformat(),
             'time': '18:30',
             'venue': 'Auditorium A',
-            'seat_limit': 120,
+            'seat_limit': 10,
             'created_by': 1,
         },
         {
@@ -125,7 +125,7 @@ def _seed_events(connection):
             'date': (today + timedelta(days=12)).isoformat(),
             'time': '16:00',
             'venue': 'Main Sports Field',
-            'seat_limit': 60,
+            'seat_limit': 12,
             'created_by': 1,
         },
         {
@@ -135,7 +135,7 @@ def _seed_events(connection):
             'date': (today + timedelta(days=15)).isoformat(),
             'time': '11:00',
             'venue': 'Smart Labs Studio',
-            'seat_limit': 40,
+            'seat_limit': 8,
             'created_by': 1,
         },
         {
@@ -145,17 +145,7 @@ def _seed_events(connection):
             'date': (today + timedelta(days=22)).isoformat(),
             'time': '14:00',
             'venue': 'Executive Hall',
-            'seat_limit': 70,
-            'created_by': 1,
-        },
-        {
-            'title': 'Design Sprint Challenge',
-            'description': 'A rapid innovation challenge focused on prototyping and human-centered design thinking.',
-            'category': 'Technical',
-            'date': (today + timedelta(days=28)).isoformat(),
-            'time': '09:30',
-            'venue': 'Maker Studio',
-            'seat_limit': 55,
+            'seat_limit': 10,
             'created_by': 1,
         },
         {
@@ -165,17 +155,7 @@ def _seed_events(connection):
             'date': (today - timedelta(days=10)).isoformat(),
             'time': '13:00',
             'venue': 'Student Center',
-            'seat_limit': 90,
-            'created_by': 1,
-        },
-        {
-            'title': 'Tech & Talent Meetup',
-            'description': 'A networking session for students and recruiters, including a short panel and informal career conversations.',
-            'category': 'Seminar',
-            'date': (today + timedelta(days=3)).isoformat(),
-            'time': '17:00',
-            'venue': 'Conference Center',
-            'seat_limit': 2,
+            'seat_limit': 12,
             'created_by': 1,
         },
     ]
@@ -212,12 +192,12 @@ def seed_database():
         student_password = generate_password_hash('Student@123')
 
         user_rows = [
-            (1, 'Admin User', 'admin@campuspulse.edu', admin_password, 'admin'),
-            (2, 'Maya Chen', 'maya@campuspulse.edu', student_password, 'student'),
-            (3, 'Daniel Torres', 'daniel@campuspulse.edu', student_password, 'student'),
+            (1, 'Arjun Rao', 'admin@campuspulse.edu', admin_password, 'admin'),
+            (2, 'Aarav Mehta', 'aarav@campuspulse.edu', student_password, 'student'),
+            (3, 'Ananya Iyer', 'ananya@campuspulse.edu', student_password, 'student'),
             (4, 'Priya Nair', 'priya@campuspulse.edu', student_password, 'student'),
-            (5, 'Leo Carter', 'leo@campuspulse.edu', student_password, 'student'),
-            (6, 'Aisha Rahman', 'aisha@campuspulse.edu', student_password, 'student'),
+            (5, 'Rohan Patel', 'rohan@campuspulse.edu', student_password, 'student'),
+            (6, 'Kavya Desai', 'kavya@campuspulse.edu', student_password, 'student'),
         ]
         connection.executemany(
             'INSERT INTO users (id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)',
@@ -232,8 +212,8 @@ def seed_database():
             (4, event_ids['Cultural Night 2026'], 'confirmed', '2026-11-15 10:00:00'),
             (5, event_ids['AI for Everyday Problems'], 'confirmed', '2026-11-15 11:30:00'),
             (6, event_ids['Campus Wellness Week Kickoff'], 'confirmed', '2026-11-15 12:30:00'),
-            (2, event_ids['Tech & Talent Meetup'], 'confirmed', '2026-11-15 14:00:00'),
-            (3, event_ids['Tech & Talent Meetup'], 'confirmed', '2026-11-15 14:20:00'),
+            (2, event_ids['Campus Wellness Week Kickoff'], 'confirmed', '2026-11-15 13:00:00'),
+            (3, event_ids['Campus Wellness Week Kickoff'], 'confirmed', '2026-11-15 13:20:00'),
         ]
         connection.executemany(
             'INSERT INTO registrations (user_id, event_id, status, registered_at) VALUES (?, ?, ?, ?)',
@@ -241,8 +221,8 @@ def seed_database():
         )
 
         waitlist_entries = [
-            (4, event_ids['Tech & Talent Meetup'], '2026-11-15 15:00:00', 'waiting'),
-            (5, event_ids['Tech & Talent Meetup'], '2026-11-15 15:40:00', 'waiting'),
+            (4, event_ids['Campus Innovation Expo'], '2026-11-15 15:00:00', 'waiting'),
+            (5, event_ids['Campus Innovation Expo'], '2026-11-15 15:40:00', 'waiting'),
         ]
         connection.executemany(
             'INSERT INTO waitlist (user_id, event_id, joined_at, status) VALUES (?, ?, ?, ?)',
@@ -250,9 +230,9 @@ def seed_database():
         )
 
         feedback_rows = [
-            (2, event_ids['Campus Wellness Week Kickoff'], 5, 'Very insightful and well organized. The wellness resources were especially useful.', '2026-11-15 18:00:00'),
-            (3, event_ids['Campus Wellness Week Kickoff'], 4, 'The sessions were helpful and the pacing was good.', '2026-11-15 18:45:00'),
-            (4, event_ids['Campus Wellness Week Kickoff'], 5, 'Excellent event with a friendly atmosphere and strong speakers.', '2026-11-15 19:15:00'),
+            (2, event_ids['Campus Wellness Week Kickoff'], 5, 'The wellness activities were thoughtful and the volunteers made everyone feel welcome.', '2026-11-15 18:00:00'),
+            (3, event_ids['Campus Wellness Week Kickoff'], 4, 'A useful session with practical resources and a comfortable pace.', '2026-11-15 18:45:00'),
+            (4, event_ids['Campus Wellness Week Kickoff'], 5, 'Enjoyed the mindfulness workshop and the friendly campus atmosphere.', '2026-11-15 19:15:00'),
         ]
         connection.executemany(
             'INSERT INTO feedback (user_id, event_id, rating, comment, created_at) VALUES (?, ?, ?, ?, ?)',

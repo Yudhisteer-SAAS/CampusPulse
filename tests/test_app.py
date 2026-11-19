@@ -33,10 +33,10 @@ class CampusPulseAppTests(unittest.TestCase):
         )
 
     def test_student_registration_and_duplicate_prevention(self):
-        response = self.login('maya@campuspulse.edu', 'Student@123')
+        response = self.login('aarav@campuspulse.edu', 'Student@123')
         self.assertIn('Welcome back', response.get_data(as_text=True))
 
-        event_id = self._get_event_id('Design Sprint Challenge')
+        event_id = self._get_event_id('Cultural Night 2026')
         token = self.get_csrf()
         response = self.client.post(
             f'/events/{event_id}/register',
@@ -148,12 +148,41 @@ class CampusPulseAppTests(unittest.TestCase):
         )
         self.assertIn('Event updated successfully', response.get_data(as_text=True))
 
+    def test_seeded_demo_data_shows_waitlist_and_feedback_to_admin(self):
+        with get_db_connection() as connection:
+            demo_event_count = connection.execute(
+                '''
+                SELECT COUNT(*) AS total FROM events
+                WHERE title IN (
+                    'Campus Innovation Expo',
+                    'Cultural Night 2026',
+                    'Intercollege Football League',
+                    'AI for Everyday Problems',
+                    'Startup Storytelling Seminar',
+                    'Campus Wellness Week Kickoff'
+                )
+                '''
+            ).fetchone()['total']
+            waitlist_event_id = connection.execute(
+                'SELECT event_id FROM waitlist LIMIT 1'
+            ).fetchone()['event_id']
+            feedback_event_id = connection.execute(
+                'SELECT event_id FROM feedback LIMIT 1'
+            ).fetchone()['event_id']
+        self.assertEqual(demo_event_count, 6)
+
+        self.login('admin@campuspulse.edu', 'Admin@123', route='/admin/login')
+        waitlist_response = self.client.get(f'/admin/events/{waitlist_event_id}')
+        self.assertIn('Priya Nair', waitlist_response.get_data(as_text=True))
+        feedback_response = self.client.get(f'/admin/events/{feedback_event_id}')
+        self.assertIn('Aarav Mehta', feedback_response.get_data(as_text=True))
+
     def test_invalid_login_and_csrf_and_sql_injection(self):
         response = self.login('fake@campuspulse.edu', 'wrongpass')
         self.assertIn('Invalid email or password', response.get_data(as_text=True))
 
         self.client.get('/login')
-        csrf_response = self.client.post('/login', data={'email': 'maya@campuspulse.edu', 'password': 'Student@123'}, follow_redirects=True)
+        csrf_response = self.client.post('/login', data={'email': 'aarav@campuspulse.edu', 'password': 'Student@123'}, follow_redirects=True)
         self.assertEqual(csrf_response.status_code, 403)
 
         injection_response = self.client.post(
@@ -164,7 +193,7 @@ class CampusPulseAppTests(unittest.TestCase):
         self.assertIn('Invalid email or password', injection_response.get_data(as_text=True))
 
     def test_student_cannot_access_admin_routes(self):
-        self.login('maya@campuspulse.edu', 'Student@123')
+        self.login('aarav@campuspulse.edu', 'Student@123')
         response = self.client.get('/admin/dashboard', follow_redirects=True)
         self.assertIn('Student login', response.get_data(as_text=True))
 
@@ -224,7 +253,7 @@ class CampusPulseAppTests(unittest.TestCase):
         self.assertIn('Feedback can only be submitted after the event date has passed', response.get_data(as_text=True))
 
     def test_event_browsing_and_filtering(self):
-        self.login('maya@campuspulse.edu', 'Student@123')
+        self.login('aarav@campuspulse.edu', 'Student@123')
         response = self.client.get('/events?category=Technical', follow_redirects=True)
         self.assertIn('Event catalog', response.get_data(as_text=True))
         self.assertIn('Technical', response.get_data(as_text=True))

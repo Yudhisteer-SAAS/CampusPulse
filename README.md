@@ -67,7 +67,10 @@ Then open:
 ## Default Accounts
 
 - Admin: `admin@campuspulse.edu` / `Admin@123`
-- Student: `maya@campuspulse.edu` / `Student@123`
+- Student: `aarav@campuspulse.edu` / `Student@123`
+- Other demo students: `ananya@campuspulse.edu`, `priya@campuspulse.edu`, `rohan@campuspulse.edu`, and `kavya@campuspulse.edu` (all use `Student@123`)
+
+The sample data includes a full event with students on its waitlist and completed events with submitted feedback. Sign in as admin and open an event from the dashboard to review those records.
 
 ## Testing
 
