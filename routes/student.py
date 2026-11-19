@@ -1,7 +1,10 @@
 from datetime import date
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, session, url_for
+from pathlib import Path
 
+from flask import Blueprint, abort, flash, redirect, render_template, request, send_from_directory, session, url_for
+
+from config import EVENT_UPLOAD_DIR
 from database import get_db_connection
 from routes.auth import login_required, student_required
 from services.feedback import get_feedback_summary, submit_feedback
@@ -38,7 +41,13 @@ def _event_cards(category=None, limit=None):
     results = []
     for row in rows:
         summary = get_event_registration_summary(row['id'])
-        results.append({**dict(row), **summary})
+        event = {**dict(row), **summary}
+        event['poster_url'] = (
+            url_for('student.poster_image', event_id=event['id'])
+            if event.get('poster_path')
+            else None
+        )
+        results.append(event)
     return results
 
 
@@ -70,6 +79,17 @@ def dashboard():
             (user_id,),
         ).fetchall()
         recommendations = get_recommendations(user_id)
+        recommendations = [
+            {
+                **event,
+                'poster_url': (
+                    url_for('student.poster_image', event_id=event['id'])
+                    if event.get('poster_path')
+                    else None
+                ),
+            }
+            for event in map(dict, recommendations)
+        ]
         waitlisted = connection.execute(
             '''
             SELECT e.*, w.joined_at
@@ -119,6 +139,10 @@ def event_detail(event_id):
             'SELECT * FROM waitlist WHERE user_id = ? AND event_id = ?',
             (session['user_id'], event_id),
         ).fetchone()
+        gallery_images = connection.execute(
+            'SELECT id FROM event_images WHERE event_id = ? ORDER BY display_order, id',
+            (event_id,),
+        ).fetchall()
 
     summary = get_event_registration_summary(event_id)
     feedback_summary = get_feedback_summary(event_id)
@@ -132,6 +156,12 @@ def event_detail(event_id):
         new_attendance_pass = create_attendance_pass(session['user_id'], registration['id'])
         if new_attendance_pass:
             new_attendance_pass['qr_image'] = create_qr_data_uri(new_attendance_pass['token'])
+    event = dict(event)
+    event['poster_url'] = (
+        url_for('student.poster_image', event_id=event_id)
+        if event['poster_path']
+        else None
+    )
 
     return render_template(
         'student/event_detail.html',
@@ -142,8 +172,33 @@ def event_detail(event_id):
         waitlist_entry=waitlist_entry,
         waitlist_position=waitlist_position,
         new_attendance_pass=new_attendance_pass,
+        gallery_images=gallery_images,
         today=date.today().isoformat(),
     )
+
+
+@student_bp.route('/events/<int:event_id>/poster-image')
+def poster_image(event_id):
+    with get_db_connection() as connection:
+        event = connection.execute(
+            'SELECT poster_path FROM events WHERE id = ?',
+            (event_id,),
+        ).fetchone()
+    if not event or not event['poster_path'] or Path(event['poster_path']).name != event['poster_path']:
+        abort(404)
+    return send_from_directory(EVENT_UPLOAD_DIR, event['poster_path'], max_age=3600)
+
+
+@student_bp.route('/event-images/<int:image_id>')
+def gallery_image(image_id):
+    with get_db_connection() as connection:
+        image = connection.execute(
+            'SELECT image_path FROM event_images WHERE id = ?',
+            (image_id,),
+        ).fetchone()
+    if not image or Path(image['image_path']).name != image['image_path']:
+        abort(404)
+    return send_from_directory(EVENT_UPLOAD_DIR, image['image_path'], max_age=3600)
 
 
 @student_bp.route('/events/<int:event_id>/register', methods=['POST'])

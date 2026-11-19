@@ -5,6 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent
 INSTANCE_DIR = BASE_DIR / 'instance'
 DEFAULT_DB_PATH = INSTANCE_DIR / 'campuspulse.db'
 DATABASE_PATH = Path(os.environ.get('CAMPUSPULSE_DB_PATH', str(DEFAULT_DB_PATH)))
+EVENT_UPLOAD_DIR = INSTANCE_DIR / 'uploads' / 'events'
 SECRET_KEY = os.environ.get('CAMPUSPULSE_SECRET_KEY', 'dev-secret-key-change-me')
 
 SESSION_COOKIE_HTTPONLY = True

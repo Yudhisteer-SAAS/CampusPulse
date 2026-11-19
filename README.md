@@ -12,8 +12,11 @@ CampusPulse is a responsive Flask application for managing campus events. Studen
 - Unique QR passes for confirmed registrations
 - Camera-based and manual attendance check-in for administrators
 - Per-event attendance lists with present and absent counts
+- Event posters and galleries with validated image uploads
+- In-app notifications for registrations, waitlists, and event changes
 - SQLite persistence, CSRF validation, password hashing, and security headers
 - Responsive student and admin interfaces
+- CampusPulse branding based on the supplied `Logo.png`
 
 ## Technology
 
@@ -52,7 +55,7 @@ The app stores its SQLite database in `instance/campuspulse.db` by default. To u
 
 ## Database migration
 
-On startup, CampusPulse runs additive, idempotent schema initialization. Existing Phase 1 users, events, registrations, waitlists, and feedback are preserved. Phase 2 adds student interests, hashed QR pass tokens, and attendance tables; it does not drop or recreate the database.
+On startup, CampusPulse runs additive, idempotent schema initialization. Existing Phase 1 users, events, registrations, waitlists, and feedback are preserved. Phase 2 adds student interests, hashed QR pass tokens, attendance, event-image metadata, and notifications; it does not drop or recreate the database.
 
 For production, back up `instance/campuspulse.db` before upgrading:
 
@@ -85,9 +88,15 @@ After signing in, use **My Interests** in the navigation to select event categor
 
 Camera scanning requires a secure browser context: open the app on `localhost` during development or serve it over HTTPS. Grant camera permission when prompted. If camera access is unavailable or denied, the manual pass-code option remains available. A pass token is random and its hash is stored in SQLite; check-in is restricted to administrators and each registration can only be checked in once.
 
+## Event images and notifications
+
+Administrators can add a poster and up to 10 gallery images when creating or editing an event. JPEG, PNG, and WebP uploads are validated and re-encoded as WebP; individual images are limited to 5 MB and 6000 pixels per dimension. Image files are stored under `instance/uploads/events`, while only generated filenames and gallery metadata are stored in SQLite. Replacing or removing an image, or deleting its event, removes the associated image file.
+
+Students receive in-app notifications for registration, waitlist, promotion, cancellation, and event updates. Administrators receive notifications for registration activity and event changes. The notification menu refreshes periodically while signed in; users can mark individual notifications or all notifications as read. The supplied root-level `Logo.png` is used to produce the smaller logo and icon assets in `static/images/`.
+
 ## Responsive layout
 
-The interface adapts across phone, tablet, and desktop widths. The admin scanner uses the device camera when supported and provides a manual fallback.
+The interface adapts across phone, tablet, and desktop widths, including collapsible mobile navigation, responsive event cards, and usable admin data sections. Layouts have been checked at 320, 375, 390, 768, and 1280 CSS pixels. The admin scanner uses the device camera when supported and provides a manual fallback. Motion effects respect `prefers-reduced-motion`.
 
 ## Tests
 

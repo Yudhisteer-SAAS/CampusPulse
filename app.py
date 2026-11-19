@@ -6,7 +6,9 @@ from config import SECRET_KEY
 from database import get_db_connection, init_db, seed_database
 from routes.admin import admin_bp
 from routes.auth import auth_bp
+from routes.notifications import notifications_bp
 from routes.student import student_bp
+from services.notifications import get_notification_summary
 
 
 def create_app():
@@ -15,6 +17,7 @@ def create_app():
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['SESSION_COOKIE_SECURE'] = False
+    app.config['MAX_CONTENT_LENGTH'] = 56 * 1024 * 1024
 
     init_db()
     seed_database()
@@ -22,6 +25,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(student_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(notifications_bp)
 
     @app.before_request
     def ensure_csrf_token():
@@ -40,7 +44,7 @@ def create_app():
             "script-src 'self'; "
             "worker-src 'self' blob:; "
             "style-src 'self' 'unsafe-inline'; "
-            "img-src 'self' data:; "
+            "img-src 'self' data: blob:; "
             "object-src 'none'; "
             "base-uri 'self'; "
             "frame-ancestors 'none'; "
@@ -59,7 +63,26 @@ def create_app():
         if user_id:
             with get_db_connection() as connection:
                 user = connection.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-        return {'current_user': user}
+        notification_summary = (
+            get_notification_summary(user['id']) if user else {'unread_count': 0, 'recent': []}
+        )
+        notification_preview = []
+        for item in notification_summary['recent']:
+            notification = dict(item)
+            event_id = notification['related_event_id']
+            notification['event_url'] = (
+                f"/admin/events/{event_id}"
+                if event_id and user['role'] == 'admin'
+                else f"/events/{event_id}"
+                if event_id
+                else None
+            )
+            notification_preview.append(notification)
+        return {
+            'current_user': user,
+            'notification_unread_count': notification_summary['unread_count'],
+            'notification_preview': notification_preview,
+        }
 
     @app.errorhandler(403)
     def access_forbidden(error):

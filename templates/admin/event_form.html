@@ -5,7 +5,7 @@
     <div class="auth-panel panel wide-panel">
       <p class="eyebrow">Event management</p>
       <h1>{{ action }} event</h1>
-      <form method="POST" action="{% if action == 'Edit' %}{{ url_for('admin.edit_event', event_id=event.id) }}{% else %}{{ url_for('admin.create_event') }}{% endif %}">
+      <form method="POST" enctype="multipart/form-data" action="{% if action == 'Edit' %}{{ url_for('admin.edit_event', event_id=event.id) }}{% else %}{{ url_for('admin.create_event') }}{% endif %}">
         <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}" />
 
         <div class="field-group">
@@ -50,8 +50,47 @@
           <input id="venue" name="venue" type="text" value="{{ event.venue if event else '' }}" placeholder="Main auditorium" required />
         </div>
 
+        <div class="field-group">
+          <label for="poster">Event poster</label>
+          <input id="poster" name="poster" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+          <small>JPEG, PNG, or WebP. Maximum 5 MB.</small>
+          {% if event and event.poster_path %}
+            <div class="existing-poster">
+              <img src="{{ url_for('student.poster_image', event_id=event.id) }}" alt="Current poster for {{ event.title }}" />
+              <label class="checkbox-line">
+                <input type="checkbox" name="remove_poster" value="1" />
+                Remove current poster
+              </label>
+            </div>
+          {% endif %}
+          <div class="image-preview-grid" id="poster-preview" aria-live="polite"></div>
+        </div>
+
+        <div class="field-group">
+          <label for="gallery-images">Additional event images</label>
+          <input id="gallery-images" name="gallery_images" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple />
+          <small>Add up to 10 gallery images total. Each image must be smaller than 5 MB.</small>
+          {% if gallery_images %}
+            <div class="existing-gallery">
+              {% for image in gallery_images %}
+                <div class="existing-gallery-item">
+                  <img src="{{ url_for('student.gallery_image', image_id=image.id) }}" alt="Gallery image {{ loop.index }} for {{ event.title }}" />
+                  <label class="checkbox-line">
+                    <input type="checkbox" name="remove_gallery_image" value="{{ image.id }}" />
+                    Remove image {{ loop.index }}
+                  </label>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          <div class="image-preview-grid" id="gallery-preview" aria-live="polite"></div>
+        </div>
+
         <button class="button full-width" type="submit">{{ action }} event</button>
       </form>
     </div>
   </section>
+{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/event-image-preview.js') }}" defer></script>
 {% endblock %}

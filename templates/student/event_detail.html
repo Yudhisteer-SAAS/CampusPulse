@@ -13,6 +13,12 @@
     {% endif %}
   </section>
 
+  {% if event.poster_url %}
+    <figure class="event-poster reveal">
+      <img src="{{ event.poster_url }}" alt="Poster for {{ event.title }}" />
+    </figure>
+  {% endif %}
+
   <section class="detail-layout reveal">
     <div class="panel detail-panel">
       <p class="event-description">{{ event.description }}</p>
@@ -101,4 +107,22 @@
       {% endif %}
     </aside>
   </section>
+
+  {% if gallery_images %}
+    <section class="section reveal">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">From the event</p>
+          <h2>Gallery</h2>
+        </div>
+      </div>
+      <div class="event-gallery">
+        {% for image in gallery_images %}
+          <a href="{{ url_for('student.gallery_image', image_id=image.id) }}" target="_blank" rel="noopener">
+            <img src="{{ url_for('student.gallery_image', image_id=image.id) }}" alt="{{ event.title }} gallery image {{ loop.index }}" loading="lazy" />
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
 {% endblock %}

@@ -22,6 +22,9 @@
       <div class="card-grid">
         {% for event in events %}
           <article class="event-card reveal">
+            {% if event.poster_url %}
+              <img class="event-card-image" src="{{ event.poster_url }}" alt="Poster for {{ event.title }}" loading="lazy" />
+            {% endif %}
             <div class="event-card-head">
               <span class="tag">{{ event.category }}</span>
               <span class="seat-pill">{{ event.available_seats }} seats</span>

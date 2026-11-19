@@ -53,6 +53,12 @@ def init_db():
             '''
         )
 
+        event_columns = {
+            row['name'] for row in connection.execute('PRAGMA table_info(events)')
+        }
+        if 'poster_path' not in event_columns:
+            connection.execute('ALTER TABLE events ADD COLUMN poster_path TEXT')
+
         connection.execute(
             '''
             CREATE TABLE IF NOT EXISTS registrations (
@@ -115,6 +121,45 @@ def init_db():
         connection.execute(
             'CREATE INDEX IF NOT EXISTS idx_attendance_checked_in_by '
             'ON attendance(checked_in_by)'
+        )
+
+        connection.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS event_images (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_id INTEGER NOT NULL,
+                image_path TEXT NOT NULL UNIQUE,
+                image_type TEXT NOT NULL DEFAULT 'gallery' CHECK(image_type = 'gallery'),
+                display_order INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE CASCADE
+            )
+            '''
+        )
+        connection.execute(
+            'CREATE INDEX IF NOT EXISTS idx_event_images_event_order '
+            'ON event_images(event_id, display_order, id)'
+        )
+
+        connection.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                recipient_id INTEGER NOT NULL,
+                event_id INTEGER,
+                type TEXT NOT NULL,
+                title TEXT NOT NULL,
+                message TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                read_at TEXT,
+                FOREIGN KEY(recipient_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE SET NULL
+            )
+            '''
+        )
+        connection.execute(
+            'CREATE INDEX IF NOT EXISTS idx_notifications_recipient_read_created '
+            'ON notifications(recipient_id, read_at, created_at)'
         )
 
         connection.execute(

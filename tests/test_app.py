@@ -2,17 +2,20 @@ import sqlite3
 import os
 import tempfile
 import unittest
+from io import BytesIO
 from datetime import date, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
 import werkzeug
+from PIL import Image
 
 os.environ.setdefault('CAMPUSPULSE_DB_PATH', str(Path(tempfile.mkdtemp()) / 'campuspulse.db'))
 os.environ.setdefault('CAMPUSPULSE_SECRET_KEY', 'test-secret-key')
 
 from app import app
 import database
+from config import EVENT_UPLOAD_DIR
 from database import get_db_connection, init_db, seed_database
 from services.attendance import check_in_attendance, create_attendance_pass
 from services.feedback import get_feedback_summary, submit_feedback
@@ -24,6 +27,19 @@ class CampusPulseAppTests(unittest.TestCase):
         init_db()
         seed_database()
         self.client = app.test_client()
+        self.uploads_before = set(EVENT_UPLOAD_DIR.glob('*.webp')) if EVENT_UPLOAD_DIR.exists() else set()
+
+    def tearDown(self):
+        if EVENT_UPLOAD_DIR.exists():
+            for path in set(EVENT_UPLOAD_DIR.glob('*.webp')) - self.uploads_before:
+                path.unlink(missing_ok=True)
+
+    @staticmethod
+    def _png_upload(color):
+        image_bytes = BytesIO()
+        Image.new('RGB', (16, 12), color).save(image_bytes, format='PNG')
+        image_bytes.seek(0)
+        return image_bytes
 
     def get_csrf(self):
         with self.client.session_transaction() as session:
@@ -168,6 +184,205 @@ class CampusPulseAppTests(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertIn('Event updated successfully', response.get_data(as_text=True))
+
+    def test_event_image_upload_replace_remove_and_validation(self):
+        self.login('admin@campuspulse.edu', 'Admin@123', route='/admin/login')
+        response = self.client.post(
+            '/admin/events/new',
+            data={
+                'csrf_token': self.get_csrf(),
+                'title': 'Image Upload Test Event',
+                'description': 'An event used to test secure poster and gallery uploads.',
+                'category': 'Workshop',
+                'date': '2099-12-20',
+                'time': '12:30',
+                'venue': 'Innovation Lab',
+                'seat_limit': '50',
+                'poster': (self._png_upload((30, 70, 90)), 'poster.png'),
+                'gallery_images': [
+                    (self._png_upload((80, 120, 40)), 'gallery-one.png'),
+                    (self._png_upload((120, 40, 80)), 'gallery-two.png'),
+                ],
+            },
+            follow_redirects=True,
+        )
+        self.assertIn('Event created successfully', response.get_data(as_text=True))
+
+        with get_db_connection() as connection:
+            event = connection.execute(
+                'SELECT id, poster_path FROM events WHERE title = ?',
+                ('Image Upload Test Event',),
+            ).fetchone()
+            gallery = connection.execute(
+                'SELECT id, image_path FROM event_images WHERE event_id = ? ORDER BY id',
+                (event['id'],),
+            ).fetchall()
+        self.assertTrue(event['poster_path'].endswith('.webp'))
+        self.assertEqual(len(gallery), 2)
+        poster_response = self.client.get(f"/events/{event['id']}/poster-image")
+        gallery_response = self.client.get(f"/event-images/{gallery[0]['id']}")
+        self.assertEqual(poster_response.mimetype, 'image/webp')
+        self.assertEqual(gallery_response.mimetype, 'image/webp')
+        poster_response.close()
+        gallery_response.close()
+        original_paths = [EVENT_UPLOAD_DIR / event['poster_path']] + [
+            EVENT_UPLOAD_DIR / image['image_path'] for image in gallery
+        ]
+
+        response = self.client.post(
+            f"/admin/events/{event['id']}/edit",
+            data={
+                'csrf_token': self.get_csrf(),
+                'title': 'Image Upload Test Event',
+                'description': 'An event used to test secure poster and gallery uploads.',
+                'category': 'Workshop',
+                'date': '2099-12-20',
+                'time': '12:30',
+                'venue': 'Innovation Lab',
+                'seat_limit': '50',
+                'remove_poster': '1',
+                'remove_gallery_image': str(gallery[0]['id']),
+            },
+            follow_redirects=True,
+        )
+        self.assertIn('Event updated successfully', response.get_data(as_text=True))
+        with get_db_connection() as connection:
+            updated_event = connection.execute(
+                'SELECT poster_path FROM events WHERE id = ?',
+                (event['id'],),
+            ).fetchone()
+            remaining_images = connection.execute(
+                'SELECT id, image_path FROM event_images WHERE event_id = ?',
+                (event['id'],),
+            ).fetchall()
+        self.assertIsNone(updated_event['poster_path'])
+        self.assertEqual([image['id'] for image in remaining_images], [gallery[1]['id']])
+        self.assertFalse(original_paths[0].exists())
+        self.assertFalse(original_paths[1].exists())
+        self.assertTrue(original_paths[2].exists())
+
+        invalid_response = self.client.post(
+            '/admin/events/new',
+            data={
+                'csrf_token': self.get_csrf(),
+                'title': 'Invalid Image Test Event',
+                'description': 'An event used to reject files with invalid image contents.',
+                'category': 'Workshop',
+                'date': '2099-12-21',
+                'time': '12:30',
+                'venue': 'Innovation Lab',
+                'seat_limit': '50',
+                'poster': (BytesIO(b'not an image'), 'fake.png'),
+            },
+            follow_redirects=True,
+        )
+        self.assertIn('not a valid image', invalid_response.get_data(as_text=True))
+        with get_db_connection() as connection:
+            self.assertIsNone(connection.execute(
+                'SELECT id FROM events WHERE title = ?',
+                ('Invalid Image Test Event',),
+            ).fetchone())
+
+    def test_notification_recipients_ownership_reading_and_event_updates(self):
+        with get_db_connection() as connection:
+            event_cursor = connection.execute(
+                '''
+                INSERT INTO events (title, description, category, date, time, venue, seat_limit, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''',
+                (
+                    'Notification Test Event',
+                    'An event used to verify notification ownership and updates.',
+                    'Workshop',
+                    '2099-12-22',
+                    '14:00',
+                    'Studio C',
+                    5,
+                    1,
+                ),
+            )
+            event_id = event_cursor.lastrowid
+
+        self.login('aarav@campuspulse.edu', 'Student@123')
+        with get_db_connection() as connection:
+            student_id = connection.execute(
+                'SELECT id FROM users WHERE email = ?',
+                ('aarav@campuspulse.edu',),
+            ).fetchone()['id']
+        self.client.post(
+            f'/events/{event_id}/register',
+            data={'csrf_token': self.get_csrf()},
+        )
+        with get_db_connection() as connection:
+            student_notification = connection.execute(
+                '''
+                SELECT id FROM notifications
+                WHERE recipient_id = ? AND event_id = ? AND type = 'registration_confirmed'
+                ''',
+                (student_id, event_id),
+            ).fetchone()
+            admin_notification = connection.execute(
+                '''
+                SELECT id FROM notifications
+                WHERE recipient_id = 1 AND event_id = ? AND type = 'student_registered'
+                ''',
+                (event_id,),
+            ).fetchone()
+        self.assertIsNotNone(student_notification)
+        self.assertIsNotNone(admin_notification)
+
+        self.client.get('/logout')
+        self.login('ananya@campuspulse.edu', 'Student@123')
+        unauthorized = self.client.post(
+            f"/notifications/{student_notification['id']}/read",
+            data={'csrf_token': self.get_csrf()},
+        )
+        self.assertEqual(unauthorized.status_code, 404)
+
+        self.client.get('/logout')
+        self.login('aarav@campuspulse.edu', 'Student@123')
+        marked = self.client.post(
+            f"/notifications/{student_notification['id']}/read",
+            data={'csrf_token': self.get_csrf()},
+        )
+        self.assertEqual(marked.status_code, 302)
+        self.client.post(
+            '/notifications/read-all',
+            data={'csrf_token': self.get_csrf()},
+        )
+        with get_db_connection() as connection:
+            unread = connection.execute(
+                'SELECT COUNT(*) FROM notifications WHERE recipient_id = ? AND read_at IS NULL',
+                (student_id,),
+            ).fetchone()[0]
+        self.assertEqual(unread, 0)
+
+        self.client.get('/logout')
+        self.login('admin@campuspulse.edu', 'Admin@123', route='/admin/login')
+        updated = self.client.post(
+            f'/admin/events/{event_id}/edit',
+            data={
+                'csrf_token': self.get_csrf(),
+                'title': 'Notification Test Event Updated',
+                'description': 'An event used to verify notification ownership and updates.',
+                'category': 'Workshop',
+                'date': '2099-12-22',
+                'time': '14:00',
+                'venue': 'Studio C',
+                'seat_limit': '5',
+            },
+        )
+        self.assertEqual(updated.status_code, 302)
+        with get_db_connection() as connection:
+            update_notice = connection.execute(
+                '''
+                SELECT message FROM notifications
+                WHERE recipient_id = ? AND event_id = ? AND type = 'event_updated'
+                ''',
+                (student_id, event_id),
+            ).fetchone()
+        self.assertIsNotNone(update_notice)
+        self.assertIn('Title: Notification Test Event → Notification Test Event Updated', update_notice['message'])
 
     def test_seeded_demo_data_shows_waitlist_and_feedback_to_admin(self):
         with get_db_connection() as connection:

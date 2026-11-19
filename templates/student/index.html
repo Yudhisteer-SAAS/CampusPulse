@@ -40,6 +40,9 @@
     <div class="card-grid">
       {% for event in featured %}
         <article class="event-card reveal">
+        {% if event.poster_url %}
+          <img class="event-card-image" src="{{ event.poster_url }}" alt="Poster for {{ event.title }}" loading="lazy" />
+        {% endif %}
           <div class="event-card-head">
             <span class="tag">{{ event.category }}</span>
             <span class="seat-pill">{{ event.available_seats }} seats left</span>
@@ -70,6 +73,9 @@
       <div class="list-stack">
         {% for event in events %}
           <article class="list-card reveal">
+            {% if event.poster_url %}
+              <img class="list-card-image" src="{{ event.poster_url }}" alt="Poster for {{ event.title }}" loading="lazy" />
+            {% endif %}
             <div>
               <p class="eyebrow">{{ event.category }}</p>
               <h3>{{ event.title }}</h3>
