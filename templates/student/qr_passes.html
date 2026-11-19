@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}My QR Passes{% endblock %}
+{% block content %}
+  <section class="page-header reveal">
+    <div>
+      <p class="eyebrow">Your event entry</p>
+      <h1>My QR passes</h1>
+    </div>
+  </section>
+
+  {% if passes %}
+    <section class="qr-pass-grid reveal">
+      {% for pass in passes %}
+        <article class="panel qr-pass-card">
+          <div class="qr-pass-info">
+            <p class="eyebrow">{{ pass.date }} · {{ pass.time }}</p>
+            <h2>{{ pass.title }}</h2>
+            <p>{{ pass.venue }}</p>
+            {% if pass.attendance %}
+              <span class="status confirmed">Attendance recorded</span>
+            {% else %}
+              <span class="status waitlisted">Not checked in</span>
+            {% endif %}
+          </div>
+          <img class="qr-pass-image" src="{{ pass.qr_image }}" alt="QR attendance pass for {{ pass.title }}" />
+          <a class="button button-outline" href="{{ pass.qr_image }}" download="campuspulse-pass-{{ pass.id }}.svg">Download QR pass</a>
+          <div class="pass-code-wrap">
+            <span>Manual pass code</span>
+            <code class="pass-code">{{ pass.token }}</code>
+            <button class="button button-outline copy-pass-code" type="button" data-pass-code="{{ pass.token }}">Copy code</button>
+            <span class="copy-status" aria-live="polite"></span>
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+  {% else %}
+    <div class="empty-state panel reveal">
+      <h3>No confirmed registrations yet.</h3>
+      <p>Register for an event to find its attendance pass here.</p>
+      <a class="button" href="{{ url_for('student.events') }}">Browse events</a>
+    </div>
+  {% endif %}
+{% endblock %}

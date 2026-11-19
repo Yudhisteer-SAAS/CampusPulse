@@ -78,6 +78,43 @@
   <section class="section reveal">
     <div class="section-header">
       <div>
+        <p class="eyebrow">Picked for your campus life</p>
+        <h2>Recommended for You</h2>
+      </div>
+      <a href="{{ url_for('student.profile') }}" class="text-link">Update interests</a>
+    </div>
+    {% if recommendations %}
+      <div class="card-grid">
+        {% for event in recommendations %}
+          <article class="event-card reveal">
+            <div class="event-card-head">
+              <span class="tag">{{ event.category }}</span>
+              <span class="seat-pill">{{ event.available_seats }} seats</span>
+            </div>
+            <h3>{{ event.title }}</h3>
+            <p>{{ event.description[:110] }}{% if event.description|length > 110 %}...{% endif %}</p>
+            <div class="meta-row">
+              <span>{{ event.date }}</span>
+              <span>{{ event.time }}</span>
+            </div>
+            <div class="card-footer">
+              <span>{{ event.venue }}</span>
+              <a href="{{ url_for('student.event_detail', event_id=event.id) }}">View event</a>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state panel">
+        <h3>No recommendations available right now.</h3>
+        <p>New events will appear here as they are added to campus.</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="section reveal">
+    <div class="section-header">
+      <div>
         <p class="eyebrow">Upcoming</p>
         <h2>Recommended for you</h2>
       </div>

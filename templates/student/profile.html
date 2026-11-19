@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}My Interests{% endblock %}
+{% block content %}
+  <section class="page-header reveal">
+    <div>
+      <p class="eyebrow">Make it yours</p>
+      <h1>My interests</h1>
+    </div>
+  </section>
+
+  <section class="auth-panel panel wide-panel reveal">
+    <h2>Choose the events you love</h2>
+    <p>Select categories to personalize the recommendations on your dashboard. You can change these choices anytime.</p>
+    <form method="POST" action="{{ url_for('student.profile') }}">
+      <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}" />
+      <div class="interest-grid">
+        {% for category in categories %}
+          <label class="interest-option">
+            <input type="checkbox" name="categories" value="{{ category }}" {% if category in interests %}checked{% endif %} />
+            <span>{{ category }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      <button class="button" type="submit">Save interests</button>
+    </form>
+  </section>
+{% endblock %}

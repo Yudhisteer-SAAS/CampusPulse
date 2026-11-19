@@ -38,6 +38,7 @@ def create_app():
         response.headers['Content-Security-Policy'] = (
             "default-src 'self'; "
             "script-src 'self'; "
+            "worker-src 'self' blob:; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:; "
             "object-src 'none'; "

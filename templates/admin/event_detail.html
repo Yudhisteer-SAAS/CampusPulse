@@ -8,6 +8,7 @@
     </div>
     <div class="action-row">
       <a class="button button-outline" href="{{ url_for('admin.edit_event', event_id=event.id) }}">Edit</a>
+      <a class="button button-outline" href="#attendance-records">Attendance</a>
       <form method="POST" action="{{ url_for('admin.delete_event', event_id=event.id) }}">
         <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}" />
         <button class="button button-outline danger" type="submit">Delete</button>
@@ -42,6 +43,38 @@
         <strong>{{ feedback_summary.average_rating }}</strong>
       </div>
     </aside>
+  </section>
+
+  <section id="attendance-records" class="section reveal">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">Check-in overview</p>
+        <h2>Attendance</h2>
+      </div>
+      <div class="attendance-counts">
+        <span>{{ attendance_summary.present }} present</span>
+        <span>{{ attendance_summary.absent }} absent</span>
+      </div>
+    </div>
+    {% if attendance %}
+      <div class="attendance-list">
+        {% for student in attendance %}
+          <div class="attendance-row">
+            <div>
+              <strong>{{ student.name }}</strong>
+              <span>{{ student.email }}</span>
+            </div>
+            <span class="status {% if student.checked_in_at %}confirmed{% else %}waitlisted{% endif %}">
+              {% if student.checked_in_at %}Present{% else %}Absent{% endif %}
+            </span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state panel">
+        <h3>No confirmed registrations yet.</h3>
+      </div>
+    {% endif %}
   </section>
 
   <section class="two-column-grid reveal">

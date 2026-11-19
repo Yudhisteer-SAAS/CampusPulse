@@ -1,18 +1,23 @@
 import sqlite3
+from contextlib import contextmanager
 from datetime import date, timedelta
-from pathlib import Path
 
 from werkzeug.security import generate_password_hash
 
 from config import DATABASE_PATH
 
 
+@contextmanager
 def get_db_connection():
     DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(DATABASE_PATH)
     connection.row_factory = sqlite3.Row
     connection.execute('PRAGMA foreign_keys = ON')
-    return connection
+    try:
+        with connection:
+            yield connection
+    finally:
+        connection.close()
 
 
 def init_db():
@@ -61,6 +66,55 @@ def init_db():
                 FOREIGN KEY(event_id) REFERENCES events(id)
             )
             '''
+        )
+
+        connection.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS user_interests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                category TEXT NOT NULL,
+                UNIQUE(user_id, category),
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            '''
+        )
+        connection.execute(
+            'CREATE INDEX IF NOT EXISTS idx_user_interests_user_id '
+            'ON user_interests(user_id)'
+        )
+
+        connection.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS attendance_passes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                registration_id INTEGER NOT NULL,
+                token_hash TEXT NOT NULL UNIQUE,
+                issued_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(registration_id) REFERENCES registrations(id) ON DELETE CASCADE
+            )
+            '''
+        )
+        connection.execute(
+            'CREATE INDEX IF NOT EXISTS idx_attendance_passes_registration_id '
+            'ON attendance_passes(registration_id)'
+        )
+
+        connection.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS attendance (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                registration_id INTEGER NOT NULL UNIQUE,
+                checked_in_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                checked_in_by INTEGER NOT NULL,
+                FOREIGN KEY(registration_id) REFERENCES registrations(id) ON DELETE CASCADE,
+                FOREIGN KEY(checked_in_by) REFERENCES users(id)
+            )
+            '''
+        )
+        connection.execute(
+            'CREATE INDEX IF NOT EXISTS idx_attendance_checked_in_by '
+            'ON attendance(checked_in_by)'
         )
 
         connection.execute(

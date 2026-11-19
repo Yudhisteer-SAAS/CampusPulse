@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     navMenu.querySelectorAll('a').forEach((link) => {
       link.addEventListener('click', () => {
-        if (window.innerWidth <= 760) {
+        if (window.innerWidth <= 960) {
           navMenu.classList.remove('is-open');
           navToggle.setAttribute('aria-expanded', 'false');
         }
@@ -39,6 +39,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const toast = button.closest('.toast');
       if (toast) {
         toast.remove();
+      }
+    });
+  });
+
+  document.querySelectorAll('.copy-pass-code').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const status = button.closest('.pass-code-wrap')?.querySelector('.copy-status');
+      try {
+        await navigator.clipboard.writeText(button.dataset.passCode || '');
+        if (status) status.textContent = 'Pass code copied.';
+      } catch {
+        if (status) status.textContent = 'Copy unavailable. Select the pass code above to copy it manually.';
       }
     });
   });

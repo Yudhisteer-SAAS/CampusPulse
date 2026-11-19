@@ -42,6 +42,17 @@
           <p><strong>{{ feedback_summary.average_rating }}</strong> average rating from {{ feedback_summary.total_count }} review(s).</p>
         </div>
       {% endif %}
+
+      {% if new_attendance_pass %}
+        <div class="new-pass-notice">
+          <div>
+            <p class="eyebrow">Your entry pass is ready</p>
+            <h3>Save your QR pass</h3>
+            <a class="text-link" href="{{ url_for('student.my_qr_passes') }}">View all my QR passes</a>
+          </div>
+          <img class="qr-pass-image" src="{{ new_attendance_pass.qr_image }}" alt="QR attendance pass for {{ event.title }}" />
+        </div>
+      {% endif %}
     </div>
 
     <aside class="panel side-panel">

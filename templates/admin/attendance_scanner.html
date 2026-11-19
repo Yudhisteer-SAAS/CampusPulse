@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Scanner{% endblock %}
+{% block content %}
+  <section class="page-header reveal">
+    <div>
+      <p class="eyebrow">Event check-in</p>
+      <h1>Attendance scanner</h1>
+    </div>
+  </section>
+
+  <section class="scanner-layout reveal">
+    <div class="panel scanner-panel">
+      <h2>Scan a QR pass</h2>
+      <p class="muted">Allow camera access to scan a student's pass. Camera access requires HTTPS or localhost.</p>
+      <div class="scanner-frame">
+        <video id="attendance-camera" muted playsinline></video>
+      </div>
+      <p id="scanner-status" class="muted" role="status" aria-live="polite">Starting camera…</p>
+      <button id="scanner-start" class="button button-outline" type="button" hidden>Start camera</button>
+    </div>
+
+    <div class="panel scanner-panel">
+      <h2>Enter pass code</h2>
+      <p class="muted">If the camera is unavailable, copy the manual pass code from the student's My QR Passes page.</p>
+      <form id="attendance-form" method="POST" action="{{ url_for('admin.attendance_scanner') }}">
+        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}" />
+        <div class="field-group">
+          <label for="pass-code">Attendance pass code</label>
+          <input id="pass-code" name="pass_code" type="text" autocomplete="off" maxlength="128" required />
+        </div>
+        <button class="button full-width" type="submit">Verify and check in</button>
+      </form>
+    </div>
+  </section>
+{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='vendor/qr-scanner/qr-scanner.umd.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/attendance-scanner.js') }}" defer></script>
+{% endblock %}

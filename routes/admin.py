@@ -5,6 +5,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, s
 from database import get_db_connection
 from routes.auth import admin_required, login_required
 from services.feedback import get_feedback_summary
+from services.attendance import check_in_attendance, get_attendance_summary, get_event_attendance
 from services.waitlist import get_waitlist_for_event
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
@@ -85,6 +86,25 @@ def logout():
     return redirect(url_for('auth.login'))
 
 
+@admin_bp.route('/attendance-scanner', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def attendance_scanner():
+    if request.method == 'POST':
+        try:
+            check_in = check_in_attendance(
+                request.form.get('pass_code', ''),
+                session['user_id'],
+            )
+            flash(
+                f"Attendance recorded for {check_in['student_name']} — {check_in['title']}.",
+                'success',
+            )
+        except ValueError as exc:
+            flash(str(exc), 'error')
+    return render_template('admin/attendance_scanner.html')
+
+
 @admin_bp.route('/dashboard')
 @login_required
 @admin_required
@@ -92,11 +112,16 @@ def dashboard():
     with get_db_connection() as connection:
         events = connection.execute(
             '''
-            SELECT e.*, COUNT(r.id) AS registered_count, COUNT(w.id) AS waitlist_count
+            SELECT e.*,
+                (
+                    SELECT COUNT(*) FROM registrations r
+                    WHERE r.event_id = e.id AND r.status = 'confirmed'
+                ) AS registered_count,
+                (
+                    SELECT COUNT(*) FROM waitlist w
+                    WHERE w.event_id = e.id
+                ) AS waitlist_count
             FROM events e
-            LEFT JOIN registrations r ON r.event_id = e.id AND r.status = 'confirmed'
-            LEFT JOIN waitlist w ON w.event_id = e.id
-            GROUP BY e.id
             ORDER BY e.date ASC
             '''
         ).fetchall()
@@ -229,9 +254,10 @@ def event_detail(event_id):
 
         registered_students = connection.execute(
             '''
-            SELECT r.user_id, u.name, u.email, r.registered_at
+            SELECT r.user_id, u.name, u.email, r.registered_at, a.checked_in_at
             FROM registrations r
             JOIN users u ON u.id = r.user_id
+            LEFT JOIN attendance a ON a.registration_id = r.id
             WHERE r.event_id = ?
             ORDER BY r.registered_at ASC
             ''',
@@ -240,6 +266,8 @@ def event_detail(event_id):
 
         waitlist = get_waitlist_for_event(event_id)
         feedback_summary = get_feedback_summary(event_id)
+        attendance = get_event_attendance(event_id)
+        attendance_summary = get_attendance_summary(event_id)
 
     return render_template(
         'admin/event_detail.html',
@@ -247,4 +275,6 @@ def event_detail(event_id):
         registered_students=registered_students,
         waitlist=waitlist,
         feedback_summary=feedback_summary,
+        attendance=attendance,
+        attendance_summary=attendance_summary,
     )

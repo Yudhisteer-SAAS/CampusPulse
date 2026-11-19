@@ -53,11 +53,15 @@ def register_student_for_event(user_id, event_id):
         ).fetchone()['total']
 
         if confirmed_count < event['seat_limit']:
-            connection.execute(
+            cursor = connection.execute(
                 'INSERT INTO registrations (user_id, event_id, status, registered_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
                 (user_id, event_id, 'confirmed'),
             )
-            return {'success': True, 'message': 'Registration confirmed successfully.'}
+            return {
+                'success': True,
+                'message': 'Registration confirmed successfully.',
+                'registration_id': cursor.lastrowid,
+            }
 
         connection.execute(
             'INSERT INTO waitlist (user_id, event_id, joined_at, status) VALUES (?, ?, CURRENT_TIMESTAMP, ?)',
